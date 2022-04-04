@@ -108,18 +108,27 @@ static const char* lept_parse_hex4(const char* p, unsigned* u) {
 
 static void lept_encode_utf8(lept_context* c, unsigned u) {
     /* \TODO */
-    assert(u >= "0000" && u <= "10FFFF");
-    if (u >= 0x000 && u <= 0x007F) {
-
+    //7位有效数字，用一个字节来表示
+    if (u <= 0x7F)
+        PUTC(c, u & 0xFF);
+    //共11位有效数字，用两个字节来表示
+    else if (u <= 0x7FF) {
+        //先右移6位，即取前五位有效数字，并补充前缀码作为一个有效字节
+        PUTC(c, 0xC0 | ((u >> 6) & 0xFF));
+        //然后取后六位有效数字，并补充前缀码，作为一个有效字节，以下所有以此类推
+        PUTC(c, 0x80 | (u & 0x3F));
     }
-    if (u >= 0x0800 && u <= 0xFFFF) {
-
+    else if (u <= 0xFFFF) {
+        PUTC(c, 0xE0 | ((u >> 12) & 0xFF));
+        PUTC(c, 0x80 | ((u >> 6) & 0x3F));
+        PUTC(c, 0x80 | (u & 0x3F));
     }
-    if (u >= 0x0800 && u <= 0xFFFF) {
-
-    }
-    if (u >= 0x0800 && u <= 0xFFFF) {
-
+    else {
+        assert(u <= 0x10FFFF);
+        PUTC(c, 0xF0 | ((u >> 18) & 0xFF));
+        PUTC(c, 0x80 | ((u >> 12) & 0x3F));
+        PUTC(c, 0x80 | ((u >> 6) & 0x3F));
+        PUTC(c, 0x80 | (u & 0x3F));
     }
 }
 
